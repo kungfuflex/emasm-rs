@@ -1,0 +1,16 @@
+[package]
+name = "emasm-cli"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "emasm"
+path = "src/main.rs"
+
+[dependencies]
+emasm-common = { workspace = true }
+clap = { workspace = true }
+anyhow = { workspace = true }
+hex = { workspace = true }

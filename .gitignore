@@ -1,0 +1,133 @@
+reference
+# Rust
+/target
+**/target
+Cargo.lock
+
+# Build artifacts
+*.exe
+*.pdb
+*.dll
+*.so
+*.dylib
+*.a
+*.lib
+*.rlib
+
+# Backup and temporary files
+*.swp
+*.swo
+*.swn
+*~
+*.bak
+*.tmp
+*.temp
+.#*
+
+# OS-specific
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# IDE and Editor
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+.project
+.classpath
+.settings/
+*.code-workspace
+.history/
+
+# Rust-Analyzer
+rust-analyzer.json
+
+# Vim
+*.sw?
+Session.vim
+.netrwhist
+tags
+
+# Emacs
+\#*\#
+.\#*
+.dir-locals.el
+
+# JetBrains IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
+.idea_modules/
+
+# VS Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# Local environment
+.env
+.env.local
+.env.*.local
+
+# Testing and coverage
+*.profraw
+*.profdata
+coverage/
+lcov.info
+cobertura.xml
+
+# Documentation build
+/book
+/target/doc
+
+# Benchmark results
+/target/criterion
+
+# RustRover
+.fleet/
+.idea/
+
+# Generated files
+*.generated.*
+.cache/
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Package managers
+node_modules/
+package-lock.json
+yarn.lock
+
+# Python (if using Python tooling)
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+venv/
+ENV/
+.venv/
+
+# Build systems
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+compile_commands.json
+
+# Misc
+*.orig
+.~lock.*
