@@ -83,10 +83,12 @@ impl Assembler {
         for elem in elements {
             match elem {
                 AsmElement::Segment(label, inner) => {
+                    // Label should point to where the JUMPDEST will be
+                    let jumpdest_offset = offset;
                     labels.insert(
                         label.clone(),
                         LabelInfo {
-                            offset,
+                            offset: jumpdest_offset,
                             size_estimate: 2, // Initial estimate for PUSH address
                         },
                     );
@@ -105,11 +107,12 @@ impl Assembler {
                 }
                 AsmElement::Opcode(_) => offset += 1,
                 AsmElement::Literal(data) => {
-                    let push_len = if data.is_empty() || (data.len() == 1 && data[0] == 0) {
+                    // Match encoding logic exactly
+                    let trimmed_len = data.iter().skip_while(|&&b| b == 0).count();
+                    let push_len = if trimmed_len == 0 {
                         2 // PUSH1 0x00
                     } else {
-                        let trimmed_len = data.iter().skip_while(|&&b| b == 0).count().max(1);
-                        1 + trimmed_len
+                        1 + trimmed_len.max(1)
                     };
                     offset += push_len;
                 }
@@ -136,7 +139,11 @@ impl Assembler {
                     size += self.estimate_size(inner, labels, bytes_map);
                 }
                 AsmElement::Opcode(_) => size += 1,
-                AsmElement::Literal(data) => size += 1 + data.len(),
+                AsmElement::Literal(data) => {
+                    // Match encoding logic: trim leading zeros, minimum PUSH1 0x00
+                    let trimmed_len = data.iter().skip_while(|&&b| b == 0).count();
+                    size += if trimmed_len == 0 { 2 } else { 1 + trimmed_len.max(1) };
+                }
                 AsmElement::Label(label) => {
                     if let Some(info) = labels.get(label) {
                         size += 1 + info.size_estimate;
@@ -183,9 +190,10 @@ impl Assembler {
         let mut offset = 0;
 
         for elem in elements {
+            let start_offset = offset;
             match elem {
                 AsmElement::Segment(label, inner) => {
-                    // Label should point to where the JUMPDEST will be
+                    // Label should point to where the JUMPDEST will be (current position)
                     let jumpdest_offset = offset;
                     let push_size = self.calculate_push_size(jumpdest_offset);
                     if let Some(info) = labels.get_mut(label) {
@@ -199,7 +207,16 @@ impl Assembler {
                     offset += data.len();
                 }
                 AsmElement::Opcode(_) => offset += 1,
-                AsmElement::Literal(data) => offset += 1 + data.len(),
+                AsmElement::Literal(data) => {
+                    // Match the encoding logic: trim leading zeros, but minimum is PUSH1 0x00
+                    let trimmed_len = data.iter().skip_while(|&&b| b == 0).count();
+                    let size = if trimmed_len == 0 {
+                        2 // PUSH1 0x00
+                    } else {
+                        1 + trimmed_len.max(1)
+                    };
+                    offset += size;
+                }
                 AsmElement::Label(l) => {
                     if let Some(info) = labels.get(l) {
                         offset += 1 + info.size_estimate;
@@ -231,7 +248,11 @@ impl Assembler {
                     size += self.calculate_segment_size(inner, labels, bytes_map);
                 }
                 AsmElement::Opcode(_) => size += 1,
-                AsmElement::Literal(data) => size += 1 + data.len(),
+                AsmElement::Literal(data) => {
+                    // Match encoding logic: trim leading zeros, minimum PUSH1 0x00
+                    let trimmed_len = data.iter().skip_while(|&&b| b == 0).count();
+                    size += if trimmed_len == 0 { 2 } else { 1 + trimmed_len.max(1) };
+                }
                 AsmElement::Label(l) => {
                     if let Some(info) = labels.get(l) {
                         size += 1 + info.size_estimate;

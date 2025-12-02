@@ -62,6 +62,13 @@ impl EVMEncodable for U256 {
 
 impl EVMEncodable for Address {
     fn to_evm_bytes(&self) -> Vec<u8> {
+        // Address is 20 bytes, return as-is
+        self.as_slice().to_vec()
+    }
+}
+
+impl EVMEncodable for &Address {
+    fn to_evm_bytes(&self) -> Vec<u8> {
         self.as_slice().to_vec()
     }
 }
@@ -85,6 +92,18 @@ impl EVMEncodable for Vec<u8> {
 }
 
 impl EVMEncodable for &[u8] {
+    fn to_evm_bytes(&self) -> Vec<u8> {
+        self.to_vec()
+    }
+}
+
+impl<const N: usize> EVMEncodable for [u8; N] {
+    fn to_evm_bytes(&self) -> Vec<u8> {
+        self.to_vec()
+    }
+}
+
+impl<const N: usize> EVMEncodable for &[u8; N] {
     fn to_evm_bytes(&self) -> Vec<u8> {
         self.to_vec()
     }

@@ -1,3 +1,8 @@
 mod basic_assembly;
 mod interpolation;
 mod revm_integration;
+mod label_resolution;
+mod bytecode_analysis;
+mod label_offset_debug;
+mod placeholder_size_test;
+mod exact_failing_case;

@@ -6,7 +6,7 @@ authors.workspace = true
 license.workspace = true
 
 [dependencies]
-alloy-primitives = { workspace = true }
+alloy-primitives = "0.7"
 hex = { workspace = true }
 thiserror = { workspace = true }
 serde = { workspace = true }

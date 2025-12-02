@@ -16,7 +16,7 @@ license = "MIT OR Apache-2.0"
 [workspace.dependencies]
 emasm-common = { path = "crates/emasm-common" }
 emasm-macros = { path = "crates/emasm-macros" }
-alloy-primitives = "0.8"
+alloy-primitives = "0.7"
 hex = "0.4"
 thiserror = "1.0"
 serde = { version = "1.0", features = ["derive"] }
