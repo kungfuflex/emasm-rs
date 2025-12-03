@@ -80,11 +80,23 @@ impl Assembler {
         let mut bytes_segments = HashMap::new();
         let mut offset = 0;
 
+        self.first_pass_recursive(elements, &mut labels, &mut bytes_segments, &mut offset);
+
+        Ok((labels, bytes_segments))
+    }
+
+    fn first_pass_recursive(
+        &self,
+        elements: &[AsmElement],
+        labels: &mut HashMap<String, LabelInfo>,
+        bytes_segments: &mut HashMap<String, BytesInfo>,
+        offset: &mut usize,
+    ) {
         for elem in elements {
             match elem {
                 AsmElement::Segment(label, inner) => {
                     // Label should point to where the JUMPDEST will be
-                    let jumpdest_offset = offset;
+                    let jumpdest_offset = *offset;
                     labels.insert(
                         label.clone(),
                         LabelInfo {
@@ -92,20 +104,21 @@ impl Assembler {
                             size_estimate: 2, // Initial estimate for PUSH address
                         },
                     );
-                    offset += 1; // JUMPDEST
-                    offset += self.estimate_size(inner, &labels, &bytes_segments);
+                    *offset += 1; // JUMPDEST
+                    // Recursively process inner elements
+                    self.first_pass_recursive(inner, labels, bytes_segments, offset);
                 }
                 AsmElement::BytesSegment(label, data) => {
                     bytes_segments.insert(
                         label.clone(),
                         BytesInfo {
-                            offset,
+                            offset: *offset,
                             size: data.len(),
                         },
                     );
-                    offset += data.len();
+                    *offset += data.len();
                 }
-                AsmElement::Opcode(_) => offset += 1,
+                AsmElement::Opcode(_) => *offset += 1,
                 AsmElement::Literal(data) => {
                     // Match encoding logic exactly
                     let trimmed_len = data.iter().skip_while(|&&b| b == 0).count();
@@ -114,15 +127,13 @@ impl Assembler {
                     } else {
                         1 + trimmed_len.max(1)
                     };
-                    offset += push_len;
+                    *offset += push_len;
                 }
-                AsmElement::Label(_) => offset += 2, // Estimate PUSH1 (1) + 1-byte address (1)
-                AsmElement::BytesPtr(_) | AsmElement::BytesSize(_) => offset += 2,
-                AsmElement::Placeholder(_) => offset += 2, // Conservative estimate PUSH1 + data
+                AsmElement::Label(_) => *offset += 2, // Estimate PUSH1 (1) + 1-byte address (1)
+                AsmElement::BytesPtr(_) | AsmElement::BytesSize(_) => *offset += 2,
+                AsmElement::Placeholder(_) => *offset += 2, // Conservative estimate PUSH1 + data
             }
         }
-
-        Ok((labels, bytes_segments))
     }
 
     fn estimate_size(
@@ -188,25 +199,35 @@ impl Assembler {
         bytes_map: &HashMap<String, BytesInfo>,
     ) -> Result<HashMap<String, LabelInfo>, AssemblerError> {
         let mut offset = 0;
+        self.recalculate_offsets_recursive(elements, &mut labels, bytes_map, &mut offset);
+        Ok(labels)
+    }
 
+    fn recalculate_offsets_recursive(
+        &self,
+        elements: &[AsmElement],
+        labels: &mut HashMap<String, LabelInfo>,
+        bytes_map: &HashMap<String, BytesInfo>,
+        offset: &mut usize,
+    ) {
         for elem in elements {
-            let start_offset = offset;
             match elem {
                 AsmElement::Segment(label, inner) => {
                     // Label should point to where the JUMPDEST will be (current position)
-                    let jumpdest_offset = offset;
+                    let jumpdest_offset = *offset;
                     let push_size = self.calculate_push_size(jumpdest_offset);
                     if let Some(info) = labels.get_mut(label) {
                         info.offset = jumpdest_offset;
                         info.size_estimate = push_size;
                     }
-                    offset += 1; // JUMPDEST
-                    offset += self.calculate_segment_size(inner, &labels, bytes_map);
+                    *offset += 1; // JUMPDEST
+                    // Recursively process inner elements
+                    self.recalculate_offsets_recursive(inner, labels, bytes_map, offset);
                 }
                 AsmElement::BytesSegment(_, data) => {
-                    offset += data.len();
+                    *offset += data.len();
                 }
-                AsmElement::Opcode(_) => offset += 1,
+                AsmElement::Opcode(_) => *offset += 1,
                 AsmElement::Literal(data) => {
                     // Match the encoding logic: trim leading zeros, but minimum is PUSH1 0x00
                     let trimmed_len = data.iter().skip_while(|&&b| b == 0).count();
@@ -215,23 +236,21 @@ impl Assembler {
                     } else {
                         1 + trimmed_len.max(1)
                     };
-                    offset += size;
+                    *offset += size;
                 }
                 AsmElement::Label(l) => {
                     if let Some(info) = labels.get(l) {
-                        offset += 1 + info.size_estimate;
+                        *offset += 1 + info.size_estimate;
                     } else {
-                        offset += 3;
+                        *offset += 3;
                     }
                 }
                 AsmElement::BytesPtr(_) | AsmElement::BytesSize(_) => {
-                    offset += 3;
+                    *offset += 3;
                 }
-                AsmElement::Placeholder(_) => offset += 3,
+                AsmElement::Placeholder(_) => *offset += 3,
             }
         }
-
-        Ok(labels)
     }
 
     fn calculate_segment_size(

@@ -6,3 +6,5 @@ mod bytecode_analysis;
 mod label_offset_debug;
 mod placeholder_size_test;
 mod exact_failing_case;
+mod large_hex_literals;
+mod nested_segments;

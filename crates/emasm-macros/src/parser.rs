@@ -50,9 +50,27 @@ fn parse_single_element(expr: &Expr) -> Result<AsmToken, String> {
         }
         
         Expr::Lit(ExprLit { lit: Lit::Int(i), .. }) => {
-            let value = i.base10_parse::<u128>()
-                .map_err(|e| format!("Failed to parse integer: {}", e))?;
-            Ok(AsmToken::Literal(value))
+            // Get the raw token string to handle hex literals > u128
+            let token_str = i.to_string();
+
+            if token_str.starts_with("0x") || token_str.starts_with("0X") {
+                // Try parsing as u128 first
+                match i.base10_parse::<u128>() {
+                    Ok(value) => Ok(AsmToken::Literal(value)),
+                    Err(_) => {
+                        // Parse as hex bytes for values > u128 (up to 256-bit for EVM)
+                        let hex_str = token_str.strip_prefix("0x")
+                            .or_else(|| token_str.strip_prefix("0X"))
+                            .unwrap();
+                        let hex_bytes = parse_hex_string(hex_str)?;
+                        Ok(AsmToken::HexLiteral(hex_bytes))
+                    }
+                }
+            } else {
+                let value = i.base10_parse::<u128>()
+                    .map_err(|e| format!("Failed to parse integer: {}", e))?;
+                Ok(AsmToken::Literal(value))
+            }
         }
         
         Expr::Array(arr) => {
